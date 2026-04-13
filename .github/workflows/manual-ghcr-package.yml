@@ -1,0 +1,111 @@
+name: Manual Build | GitHub Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: "Image name under ghcr.io/<owner>/"
+        required: false
+        default: "worker-v1-vllm"
+        type: string
+      image_tag:
+        description: "Image tag (leave empty to use short commit SHA)"
+        required: false
+        default: ""
+        type: string
+      make_public:
+        description: "Attempt to set GHCR package visibility to public"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve image metadata
+        id: meta
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
+            tag="${{ github.event.inputs.image_tag }}"
+          else
+            tag="${GITHUB_SHA::7}"
+          fi
+          echo "image_name=${{ github.event.inputs.image_name }}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.image_name }}:${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image package
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.meta.outputs.image_uri }}
+
+      - name: Make package public (optional)
+        if: ${{ github.event.inputs.make_public == 'true' }}
+        shell: bash
+        env:
+          GHCR_ADMIN_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -z "${GHCR_ADMIN_TOKEN}" ]]; then
+            echo "GITHUB_TOKEN is not set; skipping automatic visibility update."
+            echo "Set package visibility to public in GitHub UI to allow anonymous docker pull."
+            exit 0
+          fi
+
+          owner="${{ github.repository_owner }}"
+          package="${{ steps.meta.outputs.image_name }}"
+          owner_type="${{ github.event.repository.owner.type }}"
+
+          if [[ "${owner_type}" == "Organization" ]]; then
+            endpoint="https://api.github.com/orgs/${owner}/packages/container/${package}/visibility"
+          else
+            endpoint="https://api.github.com/users/${owner}/packages/container/${package}/visibility"
+          fi
+
+          echo "Setting visibility to public for ${owner}/${package} (${owner_type})"
+          status_code=$(
+            curl -sS -L -o /tmp/ghcr_visibility_response.json -w "%{http_code}" -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GHCR_ADMIN_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${endpoint}" \
+            -d '{"visibility":"public"}'
+          )
+          if [[ "${status_code}" == "200" || "${status_code}" == "204" ]]; then
+            echo "Package visibility set to public."
+          else
+            echo "Could not automatically set package visibility (HTTP ${status_code})."
+            echo "You can still set it manually in GitHub package settings."
+            cat /tmp/ghcr_visibility_response.json || true
+          fi
+
+      - name: Package summary
+        run: |
+          echo "Built and pushed package:"
+          echo "${{ steps.meta.outputs.image_uri }}"

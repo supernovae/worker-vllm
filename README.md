@@ -40,6 +40,22 @@ Deploy OpenAI-Compatible Blazing-Fast LLM Endpoints powered by the [vLLM](https:
 - **Available Versions**: See [GitHub Releases](https://github.com/runpod-workers/worker-vllm/releases)
 - **CUDA Compatibility**: Requires CUDA >= 12.1
 
+### Build a package from your GitHub repo
+
+You can manually build and publish a container package to your repo's GitHub Container Registry namespace with:
+
+- `.github/workflows/manual-ghcr-package.yml`
+
+In GitHub, open **Actions** -> **Manual Build | GitHub Package** -> **Run workflow**.
+By default it publishes:
+
+- `ghcr.io/<your-org-or-user>/worker-v1-vllm:<short-sha>`
+
+You can override `image_name` and `image_tag` in workflow inputs.
+For anonymous pulls (no token), the package must be **public**.
+The workflow tries to set public visibility automatically when `make_public=true` (default) using `GITHUB_TOKEN`.
+If repo permissions do not allow that API call, the image still builds and pushes, and you can switch package visibility to Public in GitHub package settings.
+
 ### Configuration
 
 Configure worker-vllm using environment variables:
