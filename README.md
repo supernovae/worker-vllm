@@ -55,7 +55,7 @@ Configure worker-vllm using environment variables:
 | `MAX_NUM_SEQS`                      | Maximum number of sequences per iteration         | 256                 | Integer                                                            |
 | `CUSTOM_CHAT_TEMPLATE`              | Custom chat template override                     |                     | Jinja2 template string                                             |
 | `ENABLE_AUTO_TOOL_CHOICE`           | Enable automatic tool selection                   | false               | boolean (true or false)                                            |
-| `TOOL_CALL_PARSER`                  | Parser for tool calls                             |                     | "mistral", "hermes", "llama3_json", "granite", "deepseek_v3", etc. |
+| `TOOL_CALL_PARSER`                  | Parser for tool calls                             |                     | Free-form parser string (for example "mistral", "hermes", "llama3_json", "qwen3_xml" if supported by your vLLM build) |
 | `OPENAI_SERVED_MODEL_NAME_OVERRIDE` | Override served model name in API                 |                     | String                                                             |
 | `MAX_CONCURRENCY`                   | Maximum concurrent requests                       | 30                  | Integer                                                            |
 
@@ -70,6 +70,50 @@ Configure worker-vllm using environment variables:
 Any env var whose name matches a valid `AsyncEngineArgs` field (uppercased) is applied automatically. Backward-compat aliases: `MODEL_NAME`, `TOKENIZER_NAME`, `MAX_CONTEXT_LEN_TO_CAPTURE`. This lets you configure any vLLM option without waiting for explicit worker support.
 
 For the complete list of all available environment variables, examples, and detailed descriptions: **[Configuration](docs/configuration.md)**
+
+RunPod template UI fields are convenience inputs. If a specific parser or advanced argument is not listed in a dropdown, you can still set the matching environment variable directly and the worker will pass it through.
+
+#### CLI to Env Mapping (Serverless)
+
+| vLLM CLI flag | Env var in this worker |
+| --- | --- |
+| `--max-model-len` | `MAX_MODEL_LEN` |
+| `--gpu-memory-utilization` | `GPU_MEMORY_UTILIZATION` |
+| `--tensor-parallel-size` | `TENSOR_PARALLEL_SIZE` |
+| `--enforce-eager` | `ENFORCE_EAGER` |
+| `--enable-prefix-caching` | `ENABLE_PREFIX_CACHING` |
+| `--enable-auto-tool-choice` | `ENABLE_AUTO_TOOL_CHOICE` |
+| `--tool-call-parser` | `TOOL_CALL_PARSER` |
+| `--enable-prompt-tokens-details` | `ENABLE_PROMPT_TOKENS_DETAILS` |
+| `--speculative_draft_model` | `SPECULATIVE_MODEL` |
+
+`--host` and `--port` are not used here because RunPod serverless manages ingress.
+
+#### Qwen Example (RunPod Endpoint Env Vars)
+
+```bash
+MODEL_NAME=RedHatAI/Qwen3-Coder-Next-NVFP4
+TENSOR_PARALLEL_SIZE=1
+GPU_MEMORY_UTILIZATION=0.70
+MAX_MODEL_LEN=262144
+ENFORCE_EAGER=true
+ENABLE_AUTO_TOOL_CHOICE=true
+TOOL_CALL_PARSER=qwen3_xml
+ENABLE_PROMPT_TOKENS_DETAILS=true
+ENABLE_PREFIX_CACHING=true
+SPECULATIVE_METHOD=draft_model
+SPECULATIVE_MODEL=Qwen/qwen2.5-coder-1.5b
+```
+
+#### GPU Memory Utilization Guidance (Serverless)
+
+Start `GPU_MEMORY_UTILIZATION` conservatively and increase only after validating real prompts:
+
+- `0.70` to `0.80`: long context, prefix caching, or speculative decoding
+- `0.80` to `0.90`: typical chat/instruct workloads
+- `0.90` to `0.95`: highest throughput after stability validation
+
+For this Qwen setup (`MAX_MODEL_LEN=262144` with prefix caching/speculative decoding), keep `0.70` as the default starting point.
 
 ## Option 2: Build Docker Image with Model Inside
 

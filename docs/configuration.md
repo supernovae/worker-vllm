@@ -127,7 +127,7 @@ The way this works is that the first request will have a batch size of `DEFAULT_
 | `OPENAI_SERVED_MODEL_NAME_OVERRIDE` | `None`      | `str`            | Overrides the name of the served model from model repo/path to specified name, which you will then be able to use the value for the `model` parameter when making OpenAI requests                                 |
 | `OPENAI_RESPONSE_ROLE`              | `assistant` | `str`            | Role of the LLM's Response in OpenAI Chat Completions.                                                                                                                                                            |
 | `ENABLE_AUTO_TOOL_CHOICE`           | `false`     | `bool`           | Enables automatic tool selection for supported models. Set to `true` to activate.                                                                                                                                 |
-| `TOOL_CALL_PARSER`                  | `None`      | `str`            | Specifies the parser for tool calls. Options: `mistral`, `hermes`, `llama3_json`, `llama4_json`, `llama4_pythonic`, `granite`, `granite-20b-fc`, `deepseek_v3`, `internlm`, `jamba`, `phi4_mini_json`, `pythonic` |
+| `TOOL_CALL_PARSER`                  | `None`      | `str`            | Specifies the parser for tool calls. Examples: `mistral`, `hermes`, `llama3_json`, `llama4_json`, `llama4_pythonic`, `granite`, `granite-20b-fc`, `deepseek_v3`, `internlm`, `jamba`, `phi4_mini_json`, `pythonic`, `qwen3_xml` (if supported by your vLLM build). |
 | `REASONING_PARSER`                  | `None`      | `str`            | Parser for reasoning-capable models (enables reasoning mode). Examples: `deepseek_r1`, `qwen3`, `granite`, `hunyuan_a13b`. Leave unset to disable.                                                                |
 | `TRUST_REQUEST_CHAT_TEMPLATE`       | `false`     | `bool`           | Allow clients to send custom chat templates in API requests. **Security consideration:** Only enable if you trust your API clients.                                                                               |
 | `RETURN_TOKENS_AS_TOKEN_IDS`        | `false`     | `bool`           | Return token IDs instead of decoded text strings in responses.                                                                                                                                                     |
@@ -178,6 +178,61 @@ Any vLLM `AsyncEngineArgs` field can be set via an environment variable using th
 - Only valid `AsyncEngineArgs` fields are applied. Unknown keys are silently ignored.
 - Values are automatically cast to the correct type (`int`, `float`, `bool`, `str`, or JSON for `dict`/`list`/`tuple`).
 - For a full list of available engine args, see the [vLLM AsyncEngineArgs documentation](https://docs.vllm.ai/en/latest/configuration/engine_args/).
+
+## CLI Flag to Env Var Mapping (RunPod Serverless)
+
+If you are coming from `vllm serve ...` flags, use these env vars in RunPod endpoint configuration:
+
+| vLLM CLI flag | Worker env var | Notes |
+| --- | --- | --- |
+| `--max-model-len` | `MAX_MODEL_LEN` | Same numeric value. |
+| `--gpu-memory-utilization` | `GPU_MEMORY_UTILIZATION` | Float between `0.0` and `1.0`. |
+| `--tensor-parallel-size` | `TENSOR_PARALLEL_SIZE` | On multi-GPU workers this repo may auto-set tensor parallel to GPU count. |
+| `--enforce-eager` | `ENFORCE_EAGER` | Set to `true` or `false`. |
+| `--enable-prefix-caching` | `ENABLE_PREFIX_CACHING` | Enables vLLM prefix caching. |
+| `--enable-auto-tool-choice` | `ENABLE_AUTO_TOOL_CHOICE` | OpenAI-compatible tool auto-selection. |
+| `--tool-call-parser` | `TOOL_CALL_PARSER` | Free-form parser name, e.g. `qwen3_xml` when supported. |
+| `--enable-prompt-tokens-details` | `ENABLE_PROMPT_TOKENS_DETAILS` | Adds prompt token details in OpenAI responses. |
+| `--speculative_draft_model` | `SPECULATIVE_MODEL` | Uses speculative decoding draft model wiring in this worker. |
+
+`--host` and `--port` do not apply to this serverless worker. RunPod manages ingress; configure the endpoint via env vars.
+
+## Qwen Serverless Example
+
+Example endpoint env configuration equivalent to your requested setup:
+
+```bash
+MODEL_NAME=RedHatAI/Qwen3-Coder-Next-NVFP4
+TENSOR_PARALLEL_SIZE=1
+GPU_MEMORY_UTILIZATION=0.70
+MAX_MODEL_LEN=262144
+ENFORCE_EAGER=true
+ENABLE_AUTO_TOOL_CHOICE=true
+TOOL_CALL_PARSER=qwen3_xml
+ENABLE_PROMPT_TOKENS_DETAILS=true
+ENABLE_PREFIX_CACHING=true
+SPECULATIVE_METHOD=draft_model
+SPECULATIVE_MODEL=Qwen/qwen2.5-coder-1.5b
+```
+
+## Recommended GPU Memory Utilization (Serverless)
+
+`GPU_MEMORY_UTILIZATION` controls how much VRAM vLLM reserves for weights, activations, and KV cache. On serverless, leaving some headroom usually improves startup and runtime stability.
+
+Suggested starting points:
+
+| Workload profile | Recommended start |
+| --- | --- |
+| Long context or speculative decoding enabled | `0.70` to `0.80` |
+| General chat/instruct workloads | `0.80` to `0.90` |
+| Maximum throughput after stability is confirmed | `0.90` to `0.95` |
+
+Tuning guidance:
+
+- If you see OOMs during warmup or first large prompts, lower by `0.05`.
+- If stable under production prompt lengths, increase gradually by `0.02` to `0.03`.
+- Prefix caching and long contexts increase KV cache pressure; keep extra headroom for those workloads.
+- For your Qwen config (`MAX_MODEL_LEN=262144`, prefix caching, speculative decoding), `0.70` is a good conservative default.
 
 ## Docker Build Arguments
 

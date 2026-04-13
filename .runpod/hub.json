@@ -186,7 +186,7 @@
         "input": {
           "name": "Max Model Length",
           "type": "number",
-          "description": "Model context length.",
+          "description": "Model context length (maps to vLLM --max-model-len).",
           "default": null,
           "advanced": true
         }
@@ -517,7 +517,7 @@
         "input": {
           "name": "Speculative Model",
           "type": "string",
-          "description": "The name of the draft model to be used in speculative decoding.",
+          "description": "Draft model for speculative decoding (equivalent to vLLM speculative draft model).",
           "advanced": true
         }
       },
@@ -590,7 +590,7 @@
         "input": {
           "name": "GPU Memory Utilization",
           "type": "number",
-          "description": "Sets GPU VRAM utilization",
+          "description": "Sets GPU VRAM utilization (maps to vLLM --gpu-memory-utilization).",
           "default": 0.95,
           "advanced": true
         }
@@ -748,33 +748,7 @@
         "input": {
           "name": "Tool Call Parser",
           "type": "string",
-          "description": "Tool call parser",
-          "options": [
-            {
-              "label": "None",
-              "value": ""
-            },
-            {
-              "label": "Hermes",
-              "value": "hermes"
-            },
-            {
-              "label": "Mistral",
-              "value": "mistral"
-            },
-            {
-              "label": "Llama3 JSON",
-              "value": "llama3_json"
-            },
-            {
-              "label": "Pythonic",
-              "value": "pythonic"
-            },
-            {
-              "label": "InternLM",
-              "value": "internlm"
-            }
-          ],
+          "description": "Tool call parser name passed directly to vLLM OpenAI serving (for example: mistral, hermes, llama3_json, qwen3_xml when supported by your vLLM version). Leave empty to disable.",
           "default": "",
           "advanced": true
         }
