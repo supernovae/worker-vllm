@@ -219,6 +219,8 @@ def get_speculative_config():
         config['model'] = spec_model
     if num_spec_tokens:
         config['num_speculative_tokens'] = num_spec_tokens
+    elif config.get('method') == 'suffix':
+        config['num_speculative_tokens'] = 32
     if ngram_max:
         config['prompt_lookup_max'] = ngram_max
     if ngram_min:

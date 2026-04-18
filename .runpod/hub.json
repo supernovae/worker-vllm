@@ -9,7 +9,7 @@
     "containerDiskInGb": 150,
     "gpuIds": "ADA_80_PRO,AMPERE_80",
     "gpuCount": 1,
-    "allowedCudaVersions": ["12.9", "12.8"],
+    "allowedCudaVersions": ["13.0", "12.9", "12.8"],
     "presets": [
       {
         "name": "deepseek-ai/deepseek-r1-distill-llama-8b",
@@ -506,7 +506,8 @@
             { "label": "EAGLE", "value": "eagle" },
             { "label": "EAGLE3", "value": "eagle3" },
             { "label": "Medusa", "value": "medusa" },
-            { "label": "MLP Speculator", "value": "mlp_speculator" }
+            { "label": "MLP Speculator", "value": "mlp_speculator" },
+            { "label": "Suffix (model-free)", "value": "suffix" }
           ],
           "default": "",
           "advanced": true

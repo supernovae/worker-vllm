@@ -38,7 +38,7 @@ Deploy OpenAI-Compatible Blazing-Fast LLM Endpoints powered by the [vLLM](https:
 **📦 Docker Image**: `runpod/worker-v1-vllm:<version>`
 
 - **Available Versions**: See [GitHub Releases](https://github.com/runpod-workers/worker-vllm/releases)
-- **CUDA Compatibility**: Requires CUDA >= 12.1
+- **CUDA Compatibility**: Requires CUDA >= 13.0
 
 ### Build a package from your GitHub repo
 
@@ -117,8 +117,8 @@ ENABLE_AUTO_TOOL_CHOICE=true
 TOOL_CALL_PARSER=qwen3_xml
 ENABLE_PROMPT_TOKENS_DETAILS=true
 ENABLE_PREFIX_CACHING=true
-SPECULATIVE_METHOD=draft_model
-SPECULATIVE_MODEL=Qwen/qwen2.5-coder-1.5b
+SPECULATIVE_METHOD=suffix
+NUM_SPECULATIVE_TOKENS=32
 ```
 
 #### GPU Memory Utilization Guidance (Serverless)
@@ -147,7 +147,7 @@ To build an image with the model baked in, you must specify the following docker
   - `MODEL_REVISION`: Model revision to load (default: `main`).
   - `BASE_PATH`: Storage directory where huggingface cache and model will be located. (default: `/runpod-volume`, which will utilize network storage if you attach it or create a local directory within the image if you don't. If your intention is to bake the model into the image, you should set this to something like `/models` to make sure there are no issues if you were to accidentally attach network storage.)
   - `QUANTIZATION`
-  - `WORKER_CUDA_VERSION`: `12.1.0` (`12.1.0` is recommended for optimal performance).
+  - `WORKER_CUDA_VERSION`: `13.0.2` (CUDA 13.0 is recommended for optimal performance).
   - `TOKENIZER_NAME`: Tokenizer repository if you would like to use a different tokenizer than the one that comes with the model. (default: `None`, which uses the model's tokenizer)
   - `TOKENIZER_REVISION`: Tokenizer revision to load (default: `main`).
   - `VLLM_NIGHTLY`: Set to `true` to replace the pinned vLLM release with the latest nightly build and the latest `transformers` from source. Useful for testing unreleased vLLM features. (default: `false`)

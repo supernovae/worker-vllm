@@ -74,7 +74,7 @@ SPECULATIVE_CONFIG='{"method": "ngram", "num_speculative_tokens": 5, "prompt_loo
 
 | Variable                                 | Default | Type/Choices                                                       | Description                                                                               |
 | ---------------------------------------- | ------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `SPECULATIVE_METHOD`                     | None    | ['draft_model', 'ngram', 'eagle', 'eagle3', 'medusa', 'mlp_speculator'] | Speculative decoding method to use.                                                       |
+| `SPECULATIVE_METHOD`                     | None    | ['draft_model', 'ngram', 'eagle', 'eagle3', 'medusa', 'mlp_speculator', 'suffix'] | Speculative decoding method to use.                                                       |
 | `SPECULATIVE_MODEL`                      | None    | `str`                                                              | The name of the draft model to be used in speculative decoding.                           |
 | `NUM_SPECULATIVE_TOKENS`                 | None    | `int`                                                              | The number of speculative tokens to sample from the draft model.                          |
 | `SPECULATIVE_DRAFT_TENSOR_PARALLEL_SIZE` | None    | `int`                                                              | Number of tensor parallel replicas for the draft model.                                   |
@@ -84,6 +84,8 @@ SPECULATIVE_CONFIG='{"method": "ngram", "num_speculative_tokens": 5, "prompt_loo
 | `NGRAM_PROMPT_LOOKUP_MIN`                | None    | `int`                                                              | Min size of window for ngram prompt lookup in speculative decoding.                       |
 
 If `SPECULATIVE_CONFIG` is set, it takes priority over individual env vars. When using individual env vars without `SPECULATIVE_METHOD`, the method is auto-detected from the model name or configuration.
+
+> **Suffix Decoding**: The `suffix` method is model-free — it does not require a `SPECULATIVE_MODEL`. It uses suffix trees to pattern-match repeating sequences from past generations, making it especially effective for code-editing and agentic workloads. Requires the `arctic-inference` package (included in the container). When `NUM_SPECULATIVE_TOKENS` is not set, it defaults to 32.
 
 ## Scheduling & Performance Settings
 
@@ -241,7 +243,7 @@ These variables are used when building custom Docker images with models baked in
 | Variable              | Default          | Type  | Description                                       |
 | --------------------- | ---------------- | ----- | ------------------------------------------------- |
 | `BASE_PATH`           | `/runpod-volume` | `str` | Storage directory for huggingface cache and model |
-| `WORKER_CUDA_VERSION` | `12.1.0`         | `str` | CUDA version for the worker image                 |
+| `WORKER_CUDA_VERSION` | `13.0.2`         | `str` | CUDA version for the worker image                 |
 
 ## Deprecated Variables
 

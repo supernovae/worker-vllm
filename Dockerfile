@@ -1,13 +1,13 @@
-FROM nvidia/cuda:12.9.1-base-ubuntu22.04 
+FROM nvidia/cuda:13.0.2-base-ubuntu22.04
 
 RUN apt-get update -y \
     && apt-get install -y python3-pip
 
-RUN ldconfig /usr/local/cuda-12.9/compat/
+RUN ldconfig /usr/local/cuda-13.0/compat/
 
-# Install vLLM with FlashInfer - use CUDA 12.8 PyTorch wheels (compatible with vLLM 0.15.1)
+# Install vLLM with CUDA 13.0 PyTorch wheels
 RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install "vllm[flashinfer]==0.16.0" --extra-index-url https://download.pytorch.org/whl/cu129
+    python3 -m pip install "vllm==0.19.0" --extra-index-url https://download.pytorch.org/whl/cu130
 
 
 
@@ -46,7 +46,7 @@ ENV MODEL_NAME=$MODEL_NAME \
 ENV PYTHONPATH="/:/vllm-workspace"
 
 RUN if [ "${VLLM_NIGHTLY}" = "true" ]; then \
-    pip install -U vllm --pre --index-url https://pypi.org/simple --extra-index-url https://wheels.vllm.ai/nightly && \
+    pip install -U vllm --pre --index-url https://pypi.org/simple --extra-index-url https://wheels.vllm.ai/nightly/cu130 && \
     apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && \
     pip install git+https://github.com/huggingface/transformers.git; \
 fi
